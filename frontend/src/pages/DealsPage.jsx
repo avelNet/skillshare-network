@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { Briefcase, Plus, Search, X } from 'lucide-react'
 import { api } from '../api/client.js'
@@ -214,17 +214,14 @@ function DealsPage() {
     await loadListings()
   }
 
-  const isOwnListing =
-    selected != null && userId != null && Number(selected.authorId) === Number(userId)
-
   const closeModal = useCallback(() => {
-    setSelected(null)
-    setInterestMessage('')
-    setInterestFeedback(null)
-  }, [])
+    setSelectedListing(null)
+    setRespondMessage('')
+    setError(null)
+  }, [setSelectedListing, setRespondMessage, setError])
 
   useEffect(() => {
-    if (!selected) return undefined
+    if (!selectedListing) return undefined
     const onKey = (e) => {
       if (e.key === 'Escape') closeModal()
     }
@@ -234,27 +231,7 @@ function DealsPage() {
       document.body.style.overflow = ''
       window.removeEventListener('keydown', onKey)
     }
-  }, [selected, closeModal])
-
-  const submitInterest = async () => {
-    if (!selected || isOwnListing) return
-    setInterestBusy(true)
-    setInterestFeedback(null)
-    try {
-      await api.createListingInterest(selected.id, {
-        message: interestMessage.trim() || undefined,
-      })
-      setInterestFeedback({
-        type: 'ok',
-        text: 'Отклик отправлен. Автор объявления увидит его и сможет принять — тогда сделка появится в «Сообщениях».',
-      })
-      setInterestMessage('')
-    } catch (e) {
-      setInterestFeedback({ type: 'err', text: e.message })
-    } finally {
-      setInterestBusy(false)
-    }
-  }
+  }, [selectedListing, closeModal])
 
   return (
     <div className="animate-page space-y-8">

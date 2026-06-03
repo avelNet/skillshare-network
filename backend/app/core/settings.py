@@ -9,11 +9,8 @@ class Settings(BaseSettings):
 
     app_name: str = "SkillShare Network"
     environment: str = "local"
-    # "change-me" — дефолтное значение только для разработки.
-    # В продакшене обязательно меняется на длинную случайную строку
-    secret_key: str = "change-me"
-
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/skillshare"
+    secret_key: str
+    database_url: str
     redis_url: str = "redis://localhost:6379/0"
 
     # AnyUrl — специальный тип Pydantic,

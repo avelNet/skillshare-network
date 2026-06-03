@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Award,
+  Bell,
   CheckCircle2,
   ChevronDown,
   ChevronUp,
@@ -15,9 +16,15 @@ import {
   Zap,
 } from 'lucide-react'
 import { api } from '../api/client.js'
-import ListingEditForm from '../components/listings/ListingEditForm.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import LoadingHint from '../components/ui/LoadingHint.jsx'
+
+function initialsFromName(fullName, email) {
+  if (fullName?.trim()) {
+    return fullName.trim().split(/\s+/).map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+  }
+  return (email?.[0] ?? '?').toUpperCase()
+}
 
 // Профиль считается заполненным если есть имя
 function isProfileComplete(profile) {
@@ -424,6 +431,14 @@ function ProfilePage() {
   const [interestState, setInterestState] = useState({})
   // Навыки пользователя
   const [mySkills, setMySkills] = useState({ offered: [], wanted: [] })
+  const [reload] = useState(0)
+
+  // Алиасы для обратной совместимости переименованных состояний
+  const setActionError = setSaveError
+  const editOpen = editingName
+  const setEditOpen = setEditingName
+  const editName = nameInput
+  const setEditName = setNameInput
 
   useEffect(() => {
     if (!userId) return
@@ -456,7 +471,6 @@ function ProfilePage() {
     }
   }, [userId, reload])
 
-  const displayName = profile?.full_name?.trim() || email?.split('@')[0] || 'Пользователь'
   const initials = initialsFromName(profile?.full_name, email)
 
   const handleSaveName = async (e) => {
@@ -471,100 +485,15 @@ function ProfilePage() {
     }
   }
 
-  const handleAddSkill = async (e) => {
-    e.preventDefault()
-    const name = newSkillName.trim()
-    if (!name) return
-    setActionError(null)
-    try {
-      if (addSkillOpen === 'offered') {
-        await api.addOfferedSkill({ name })
-      } else {
-        await api.addWantedSkill({ name })
-      }
-      setNewSkillName('')
-      setAddSkillOpen(null)
-      const sk = await api.mySkills()
-      setSkills(sk)
-    } catch (err) {
-      setActionError(err.message || 'Не удалось добавить навык')
-    }
-  }
-
-  const handleRemoveSkill = async (kind, skillId) => {
-    setActionError(null)
-    try {
-      if (kind === 'offered') await api.removeOfferedSkill(skillId)
-      else await api.removeWantedSkill(skillId)
-      const sk = await api.mySkills()
-      setSkills(sk)
-    } catch (err) {
-      setActionError(err.message || 'Не удалось удалить навык')
-    }
-  }
-
-  const handleUpdateListing = async (listingId, form) => {
-    setActionError(null)
-    setListingSaveBusy(true)
-    try {
-      await api.updateListing(listingId, {
-        title: form.title.trim(),
-        offering_summary: form.offering_summary.trim(),
-        seeking_summary: form.seeking_summary.trim(),
-        description: form.description.trim() || null,
-      })
-      setEditingListingId(null)
-      const [prof, list] = await Promise.all([api.myProfile(), api.listings({ author_id: userId })])
-      setProfile(prof)
-      setMyListings(list)
-    } catch (err) {
-      setActionError(err.message || 'Не удалось сохранить объявление')
-    } finally {
-      setListingSaveBusy(false)
-    }
-  }
-
-  const handleCreateListing = async (e) => {
-    e.preventDefault()
-    setActionError(null)
-    try {
-      await api.createListing({
-        title: listingForm.title.trim(),
-        offering_summary: listingForm.offering_summary.trim(),
-        seeking_summary: listingForm.seeking_summary.trim(),
-        description: listingForm.description.trim() || null,
-        status: 'published',
-      })
-      setListingForm({ title: '', offering_summary: '', seeking_summary: '', description: '' })
-      setListingOpen(false)
-      const [prof, list] = await Promise.all([api.myProfile(), api.listings({ author_id: userId })])
-      setProfile(prof)
-      setMyListings(list)
-    } catch (err) {
-      setActionError(err.message || 'Не удалось создать объявление')
-    }
-  }
-
-  const handleCopyToken = async () => {
-    if (!token) return
-    try {
-      await navigator.clipboard.writeText(token)
-      setTokenCopied(true)
-      setTimeout(() => setTokenCopied(false), 2000)
-    } catch {
-      setActionError('Не удалось скопировать токен')
-    }
-  }
-
   if (loading) {
     return (
       <p className="py-16 text-center text-sm text-slate-400">Загрузка профиля…</p>
     )
   }
 
-  if (error) {
+  if (saveError) {
     return (
-      <p className="py-16 text-center text-sm text-red-400">{error}</p>
+      <p className="py-16 text-center text-sm text-red-400">{saveError}</p>
     )
   }
 
@@ -629,14 +558,6 @@ function ProfilePage() {
     }
   }
 
-  const initials = profile?.full_name
-    ? profile.full_name
-        .split(' ')
-        .map((w) => w[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : (email?.[0] ?? '?').toUpperCase()
 
   if (loading) {
     return (

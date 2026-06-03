@@ -1,5 +1,3 @@
-import { jwtUserId } from '../lib/jwt.js'
-
 const API_PREFIX = '/api/v1'
 
 async function parseBody(res) {
@@ -147,17 +145,14 @@ export const api = {
     const s = q.toString()
     return request(s ? `/admin/exchanges?${s}` : '/admin/exchanges')
   },
-  createListing: (payload) => request('/listings', { method: 'POST', body: payload }),
   updateListing: (listingId, payload) =>
     request(`/listings/${listingId}`, { method: 'PATCH', body: payload }),
   createListingInterest: (listingId, payload = {}) =>
     request(`/listings/${listingId}/interests`, { method: 'POST', body: payload }),
   incomingInterests: () => request('/listings/me/incoming-interests'),
-  listingInterests: (listingId) => request(`/listings/${listingId}/interests`),
   acceptListingInterest: (listingId, responderId) =>
     request(`/exchanges/listing/${listingId}/accept-interest`, {
       method: 'POST',
       body: { responder_id: responderId },
     }),
-  matches: () => request('/matches'),
 }

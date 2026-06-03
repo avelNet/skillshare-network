@@ -5,98 +5,6 @@ import LoadingHint from '../components/ui/LoadingHint.jsx'
 import { api } from '../api/client.js'
 import { useAuth } from '../context/AuthContext.jsx'
 
-function StarPicker({ value, onChange }) {
-  const [hovered, setHovered] = useState(0)
-  return (
-    <div className="flex gap-1">
-      {[1, 2, 3, 4, 5].map((s) => (
-        <button
-          key={s}
-          type="button"
-          onMouseEnter={() => setHovered(s)}
-          onMouseLeave={() => setHovered(0)}
-          onClick={() => onChange(s)}
-          className={`text-2xl transition-colors ${s <= (hovered || value) ? 'text-amber-400' : 'text-slate-700'}`}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function ReviewPanel({ exchangeId, userId }) {
-  const [reviews, setReviews] = useState(null)
-  const [rating, setRating] = useState(0)
-  const [comment, setComment] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    api.exchangeReviews(exchangeId).then(setReviews).catch(() => setReviews([]))
-  }, [exchangeId])
-
-  const myReview = reviews?.find((r) => r.reviewer_id === userId)
-  const canReview = reviews !== null && !myReview
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!rating) return
-    setSubmitting(true)
-    setError(null)
-    try {
-      await api.submitReview(exchangeId, rating, comment.trim() || null)
-      const updated = await api.exchangeReviews(exchangeId)
-      setReviews(updated)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  if (reviews === null) return null
-
-  return (
-    <div className="border-t border-white/5 bg-slate-900/60 px-4 py-4 sm:px-6">
-      {myReview ? (
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-slate-500">Ваш отзыв:</span>
-          <span className="text-amber-400">{'★'.repeat(myReview.rating)}{'☆'.repeat(5 - myReview.rating)}</span>
-          {myReview.comment ? <span className="text-xs text-slate-400 truncate">{myReview.comment}</span> : null}
-        </div>
-      ) : canReview ? (
-        <form onSubmit={handleSubmit}>
-          <p className="mb-3 text-xs font-black uppercase tracking-widest text-slate-400">
-            Оставить отзыв о сделке
-          </p>
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="space-y-2">
-              <StarPicker value={rating} onChange={setRating} />
-              <input
-                type="text"
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder="Комментарий (необязательно)"
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-indigo-500 sm:w-72"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={!rating || submitting}
-              className="shrink-0 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white transition hover:bg-indigo-500 disabled:opacity-40"
-            >
-              {submitting ? '…' : 'Отправить'}
-            </button>
-          </div>
-          {error ? <p className="mt-2 text-xs text-red-400">{error}</p> : null}
-        </form>
-      ) : (
-        <p className="text-xs text-slate-500">Сделка завершена</p>
-      )}
-    </div>
-  )
-}
 
 function formatTime(iso) {
   if (!iso) return ''
@@ -116,8 +24,8 @@ function MessagesPage() {
   const location = useLocation()
   const targetUserId = location.state?.targetUserId ?? null
   const [exchanges, setExchanges] = useState([])
-  const [incomingInterests, setIncomingInterests] = useState([])
   const [selectedId, setSelectedId] = useState(null)
+  const [actionBusy, setActionBusy] = useState(false)
   const [messages, setMessages] = useState([])
   const [draft, setDraft] = useState('')
   const [error, setError] = useState(null)
@@ -133,8 +41,7 @@ function MessagesPage() {
     setLoadingList(true)
     setError(null)
     try {
-      const [ex, incoming] = await Promise.all([api.myExchanges(), api.incomingInterests()])
-      setIncomingInterests(incoming)
+      const ex = await api.myExchanges()
       setExchanges(ex)
       setSelectedId((prev) => {
         // При переходе с матчейкинга всегда выбираем обмен с нужным пользователем
@@ -153,7 +60,7 @@ function MessagesPage() {
     } finally {
       setLoadingList(false)
     }
-  }, [isAuthenticated, targetUserId])
+  }, [targetUserId])
 
   useEffect(() => {
     ;(async () => {
@@ -483,9 +390,10 @@ function MessagesPage() {
                   <button
                     type="button"
                     onClick={confirmDone}
-                    className="rounded-xl bg-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500"
+                    disabled={actionBusy}
+                    className="rounded-xl bg-indigo-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white shadow-lg shadow-indigo-500/20 transition hover:bg-indigo-500 disabled:opacity-50"
                   >
-                    Подтвердить выполнение
+                    {actionBusy ? '…' : 'Подтвердить выполнение'}
                   </button>
                 ) : null}
               </div>

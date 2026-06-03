@@ -59,6 +59,10 @@ class ReviewCreate(BaseModel):
     comment: str | None = None
 
 
+class ExchangeListOut(ExchangeOut):
+    listing_title: str | None = None
+
+
 class ReviewOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

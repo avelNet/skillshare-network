@@ -65,14 +65,8 @@ function AdminPage() {
 
   useEffect(() => {
     if (!isAdmin) return
-    setPage(0)
-    void load(0)
-  }, [isAdmin, filter])
-
-  useEffect(() => {
-    if (!isAdmin) return
-    void load(page)
-  }, [page])
+    void load(page) // eslint-disable-line react-hooks/set-state-in-effect
+  }, [isAdmin, page, filter]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!isAdmin) {
     return (
@@ -112,7 +106,7 @@ function AdminPage() {
           <button
             key={value}
             type="button"
-            onClick={() => setFilter(value)}
+            onClick={() => { setFilter(value); setPage(0) }}
             className={`rounded-xl px-4 py-2 text-[10px] font-black uppercase tracking-widest transition ${
               filter === value
                 ? 'bg-indigo-600 text-white'
