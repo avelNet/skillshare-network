@@ -1,96 +1,75 @@
-## SkillShare Network
+# SkillShare Network 🔄
 
-Платформа для обмена навыками, где пользователи публикуют свои предложения (что они умеют и чему могут обучить) и указывают, что хотят получить взамен. Другие пользователи могут откликаться на эти предложения, и при взаимном интересе система создаёт сделку между двумя людьми.
+**SkillShare Network** — это интеллектуальная платформа для безденежного обмена навыками и услугами. Система использует умные алгоритмы для выстраивания цепочек обмена между специалистами, позволяя обмениваться знаниями без использования валюты.
 
-Каждая сделка проходит через статусы: обсуждение, активный обмен и завершение. После создания сделки автоматически открывается чат внутри неё, через который участники договариваются и ведут сам обмен. В активной сделке переписка доступна только между участниками этой сделки, и она существует только в рамках её жизненного цикла.
+---
 
-После завершения сделки оба пользователя подтверждают результат и оценивают друг друга, формируя рейтинг доверия.
+## 🛠 Технологический стек
 
-Отдельно есть вкладка “чаты”: там отображаются все текущие и завершённые сделки. Однако писать можно только в активных сделках — завершённые чаты остаются в виде архива истории и доступны только для просмотра, без возможности продолжить переписку.
+*   **Backend:** Python 3.12, FastAPI, SQLAlchemy 2.0, Pydantic v2.
+*   **Frontend:** React, TypeScript, Vite, TailwindCSS.
+*   **Database:** PostgreSQL 15 (основное хранилище).
+*   **Caching/Queue:** Redis 7.
+*   **Infrastructure:** Docker, Docker Compose.
+*   **Linting:** Ruff (Python), ESLint/Prettier (JS).
 
-Дополнительно система использует матчмейкинг, который анализирует навыки, запросы и историю обменов, чтобы предлагать наиболее подходящих людей для потенциального обмена с высокой вероятностью совпадения интересов.
+---
 
-## Технологический стек
+## 🚀 Быстрый старт (Docker)
 
-| Слой | Технология | Почему |
-| --- | --- | --- |
-| Backend | Python 3.12 + FastAPI | Максимальная скорость, асинхронность, мощная типизация (Pydantic) |
-| Linter / Formatter | Ruff | Заменяет Flake8, Black и Isort. Молниеносная проверка кода |
-| Frontend | React + Vite | Современный компонентный подход, быстрая разработка |
-| UI-компоненты | TailwindCSS | Профессиональный UI с минимальными стилями |
-| ORM | SQLAlchemy 2.0 + Alembic | Работа со сложным SQL и рекурсиями для матчинга цепочек |
-| База данных | PostgreSQL 16+ | Реляционная классика, идеальна для графовых запросов (CTE) |
-| Real-time | WebSockets | Real-time чат через `/api/v1/chat/{id}/ws` |
-| Auth | JWT + X-User-Id header | MVP-аутентификация через заголовки (см. `app/api/deps.py`) |
-| Ops | Docker + GitHub Actions | Стандарт индустрии для контейнеризации и автоматизации |
+Самый простой способ запустить проект — использовать Docker Compose.
 
-## Архитектурный план (следующий спринт)
+1.  **Подготовка окружения:**
+    Скопируйте пример файла настроек и заполните его:
+    ```bash
+    cp backend/.env.example backend/.env
+    ```
+    *Отредактируйте `backend/.env`, указав свои секретные ключи.*
 
-Каркас бэкенда подготовлен для расширения:
+2.  **Запуск системы:**
+    ```bash
+    docker compose --profile full up -d --build
+    ```
 
-| Фича | Статус | Файл |
-| --- | --- | --- |
-| WebSocket чат | ✅ Работает | `app/ws/manager.py`, `app/api/v1/chat.py` |
-| Правила переписки | ✅ Готов | `app/policies/exchange_messaging.py` |
-| Redis кэш | 🔄 Планируется | - |
-| Рекурсивные CTE для графов | 🔄 Планируется | SQLAlchemy 2.0 поддерживает CTE |
-| Chain matching | 🔄 Планируется | Поиск цепочек обмена A→B→C |
+3.  **Доступ к приложению:**
+    *   **Frontend:** [http://localhost:5173](http://localhost:5173)
+    *   **Backend API:** [http://localhost:8000](http://localhost:8000)
+    *   **API Docs (Swagger):** [http://localhost:8000/docs](http://localhost:8000/docs)
 
-## Структура репозитория
+---
 
-- `backend/`: FastAPI-приложение, DB слой и миграции Alembic
-- `frontend/`: React-приложение (Vite + TailwindCSS)
-- `docker-compose.yml`: PostgreSQL + backend
+## ⚙️ Переменные окружения (.env)
 
-## Быстрый старт (локально)
+Проект требует наличия следующих переменных в файле `backend/.env`:
 
-Требования: Python 3.12+, [`uv`](https://astral.sh/uv/)
+| Переменная | Описание | Пример |
+| :--- | :--- | :--- |
+| `SSN_SECRET_KEY` | Ключ для подписи JWT-токенов | `your-super-secret-key` |
+| `SSN_DATABASE_URL` | URL подключения к PostgreSQL | `postgresql+asyncpg://user:pass@db:5432/db` |
+| `SSN_REDIS_URL` | URL подключения к Redis | `redis://redis:6379/0` |
 
+---
+
+## 📂 Структура проекта
+
+*   `backend/` — Исходный код сервера (FastAPI).
+    *   `app/core/settings.py` — Конфигурация приложения.
+*   `frontend/` — Исходный код клиента (React).
+*   `docker-compose.yml` — Описание сервисов и их связей.
+*   `Documentation/` — Техническая документация и схемы.
+
+---
+
+## 👨‍🔧 Сопровождение (Maintenance)
+
+Для проверки качества кода (линтер Ruff):
 ```bash
 cd backend
-uv sync
-uv run uvicorn app.main:app --reload
+ruff check .
 ```
 
-Открыть:
-- `http://localhost:8000/` (SSR страница)
-- `http://localhost:8000/api/health` (healthcheck)
-
-### Ruff
-
+Устранение проблем с портами (если порт 8000 занят):
 ```bash
-cd backend
-uv run ruff check .
-uv run ruff format .
-```
-
-## Запуск через Docker
-
-### Полный стек (backend + frontend + postgres)
-
-```bash
-docker compose --profile full up --build
-```
-
-### Только backend + postgres (без frontend)
-
-```bash
-docker compose up --build
-```
-
-### Остановка
-
-```bash
-docker compose --profile full down
-```
-
-## Миграции (Alembic)
-
-Перед миграциями убедитесь, что поднят Postgres и корректен `SSN_DATABASE_URL`.
-
-```bash
-cd backend
-cp .env.example .env
-uv run alembic revision --autogenerate -m "init"
-uv run alembic upgrade head
+sudo lsof -i :8000
+docker stop <PID/ContainerID>
 ```

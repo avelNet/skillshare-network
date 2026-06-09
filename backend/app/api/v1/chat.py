@@ -31,6 +31,16 @@ async def get_chat(exchange_id: int, db: DB):
 
 @router.get("/exchanges/{exchange_id}/messages", response_model=list[MessageRead])
 async def list_messages(exchange_id: int, db: DB):
+    """
+    Получить историю сообщений для конкретной сделки (обмена).
+
+    **Параметры:**
+    - **exchange_id**: Уникальный идентификатор сделки.
+
+    **Возвращает:**
+    - Список сообщений с данными об авторе и времени отправки.
+    - Ошибку **404 Not Found**, если чат для сделки не существует.
+    """
     return await message_crud.get_messages_by_exchange(db, exchange_id)
 
 
