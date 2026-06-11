@@ -1,49 +1,41 @@
-from __future__ import annotations
-
-import json
 import logging
 import sys
-from datetime import UTC, datetime
-from typing import Any
+from logging.handlers import RotatingFileHandler
+from pathlib import Path
 
+# Путь к папке с логами (внутри контейнера это будет /app/logs)
+LOG_DIR = Path("logs")
+LOG_DIR.mkdir(exist_ok=True)
 
-class JsonFormatter(logging.Formatter):
-    def format(self, record: logging.LogRecord) -> str:
-        log_data: dict[str, Any] = {
-            "timestamp": datetime.now(UTC).isoformat(),
-            "level": record.levelname,
-            "logger": record.name,
-            "message": record.getMessage(),
-        }
-
-        for field in (
-            "request_id",
-            "method",
-            "path",
-            "query_params",
-            "status_code",
-            "duration",
-            "client_ip",
-            "user_agent",
-        ):
-            if hasattr(record, field):
-                log_data[field] = getattr(record, field)
-
-        if record.exc_info:
-            log_data["exception"] = self.formatException(record.exc_info)
-
-        return json.dumps(log_data, ensure_ascii=False)
-
-
-def setup_logging() -> None:
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(JsonFormatter())
-
-    logging.basicConfig(
-        level=logging.INFO,
-        handlers=[handler],
-        force=True,
+def setup_logging():
+    # Базовый формат лога: Время - Имя логгера - Уровень - Сообщение
+    log_format = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
 
-    logging.getLogger("uvicorn.access").handlers = []
-    logging.getLogger("uvicorn.access").propagate = False
+    # Очищаем существующие обработчики, если они есть
+    logging.getLogger().handlers = []
+
+    # 1. Обработчик для КОНСОЛИ (уровень INFO и выше)
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(log_format)
+    console_handler.setLevel(logging.INFO)
+
+    # 2. Обработчик для ФАЙЛА (только ERROR и выше + ротация)
+    # Храним до 5 файлов по 5 МБ каждый
+    file_handler = RotatingFileHandler(
+        LOG_DIR / "errors.log", 
+        maxBytes=5*1024*1024, 
+        backupCount=5,
+        encoding="utf-8"
+    )
+    file_handler.setFormatter(log_format)
+    file_handler.setLevel(logging.ERROR)
+
+    # Настройка корневого логгера
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.addHandler(console_handler)
+    root_logger.addHandler(file_handler)
+
+    logging.info("Система логирования инициализирована: консоль (INFO), файл (ERROR).")
